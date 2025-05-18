@@ -1,2 +1,0 @@
-class QuitException(Exception):
-    pass
