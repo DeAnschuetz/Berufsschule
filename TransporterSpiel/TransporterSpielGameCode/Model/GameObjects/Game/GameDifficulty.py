@@ -17,7 +17,7 @@ class GameDifficulty:
     __helicopterMaxSpeed__ : float
     __transporterMaxSpeed__ : float
 
-    def __init__(self, percentageToCollect : float, totalOre : int, transporterCapacity : float, fuelConsumption : float, helicopterMaxSpeed: float, transporterMaxSpeed : float):
+    def __init__(self, percentageToCollect : float = 80, totalOre : int = 1000, transporterCapacity : float = 100, fuelConsumption : float = 0.1, helicopterMaxSpeed: float = 5.0, transporterMaxSpeed : float = 4.5):
         """
         Initialize the GameDifficulty Configuration.
 

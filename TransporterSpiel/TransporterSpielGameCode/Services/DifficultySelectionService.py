@@ -10,6 +10,15 @@ from Services.ConfigService import getConfig
 
 
 def getDefaultFields(presetValues) -> list[tuple[str, str]]:
+    """
+    Generate a list of default fields with their corresponding preset values.
+
+    Args:
+        presetValues (dict[str, str]): Preset values for each field.
+
+    Returns:
+        list[tuple[str, str]]: List of field names and their corresponding values.
+    """
     return [
         ("Total Ore", presetValues["Total Ore"]),
         ("Percentage to Collect", presetValues["Percentage to Collect"]),
@@ -21,7 +30,23 @@ def getDefaultFields(presetValues) -> list[tuple[str, str]]:
     ]
 
 class DifficultySelectionService:
+    """
+    A Class to manage the Difficulty Selection Screen, allowing users to input and confirm game difficulty settings.
 
+    Attributes:
+        __screen__ (pygame.display): The Pygame display surface.
+        __clock__ (pygame.time.Clock): The Pygame clock object.
+        __smallFont__ (int): Font size for small text.
+        __bigFont__ (int): Font size for large text.
+        __fields__ (list[tuple[str, str]]): List of field labels and their current values.
+        __lastInputFieldMessage__ (TextGameObject): The last input field message displayed.
+        __inputFields__ (list[ImageGameObject]): List of input field game objects.
+        __gameDifficulty__ (GameDifficulty): The configured game difficulty object.
+        __presetValues__ (dict[str, str]): Preset values for each field.
+        __inputActive__ (bool): Flag indicating if input is currently active.
+        __currentField__ (int): Index of the currently active input field.
+        __confirmMode__ (bool): Flag indicating if the confirmation mode is active.
+    """
     __screen__ : pygame.display
     __clock__ : pygame.time.Clock
     __smallFont__ : int
@@ -37,6 +62,13 @@ class DifficultySelectionService:
     __confirmMode__: bool
 
     def __init__(self, screen : pygame, clock : pygame.time.Clock):
+        """
+        Initialize the DifficultySelectionService with the given screen and clock.
+
+        Args:
+            screen (pygame.Surface): The Pygame display surface.
+            clock (pygame.time.Clock): The Pygame clock object.
+        """
         config = getConfig()
         difficultySelectionConfig = config.getScreenConfig().getHudConfig().getDifficultySelectionConfig()
         difficultyConfig = config.getGameConfig().getDifficultyConfig()
@@ -58,10 +90,16 @@ class DifficultySelectionService:
         self.__initInputFields__()
 
     def selectDifficulty(self) -> GameDifficulty:
+        """
+        Launch the Difficulty Selection Screen and handle user input.
+
+        Returns:
+            GameDifficulty: The configured game difficulty object.
+        """
         self.__currentField__ = 0
         self.__inputActive__ = True
         self.__confirmMode__ = False
-        self.__fields__ = getDefaultFields(self.__presetValues__)
+        self.__resetInputFields__()
 
         while self.__inputActive__:
             self.__updateFieldValues__()
@@ -81,9 +119,15 @@ class DifficultySelectionService:
         return self.__gameDifficulty__
 
     def __resetInputFields__(self):
+        """
+        Reset the input fields to their default preset values.
+        """
         self.__fields__ = getDefaultFields(self.__presetValues__)
 
     def __updateFieldValues__(self):
+        """
+        Update the 'Ore to Collect' field based on 'Total Ore' and 'Percentage to Collect' inputs.
+        """
         try:
             totalOre = float(self.__fields__[0][1])
         except ValueError as e:
@@ -105,6 +149,9 @@ class DifficultySelectionService:
         self.__fields__[2] = ("Ore to Collect", str(newOreToCollect))
 
     def __handleInput__(self):
+        """
+        Handle user input events for navigating and editing fields, confirming settings, or quitting.
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 raise QuitException()
@@ -142,14 +189,14 @@ class DifficultySelectionService:
                                 screen=self.__screen__,
                                 message="Invalid input! Please enter valid numbers."
                             )
-                            error.updateGameObjects()
+                            error.draw()
 
                             self.__resetInputFields__()
                             self.__currentField__ = 0
                             self.__confirmMode__ = False
 
                     if event.key == pygame.K_ESCAPE:
-                        self.__fields__ = getDefaultFields(self.__presetValues__)
+                        self.__resetInputFields__()
                         self.__currentField__ = 0
                         self.__confirmMode__ = False
                     if event.key == pygame.K_q:
@@ -157,6 +204,9 @@ class DifficultySelectionService:
         return self.__currentField__
 
     def __createGameDifficultyFromFields__(self):
+        """
+        Create a GameDifficulty object from the current field values and deactivate input.
+        """
         print(self.__fields__)
         totalOre = int(self.__fields__[0][1])
         percentageToCollect = float(self.__fields__[1][1])
@@ -175,6 +225,9 @@ class DifficultySelectionService:
         self.__inputActive__ = False
 
     def __drawConfirmFields__(self):
+        """
+        Draw the confirmation screen displaying all current settings and instructions.
+        """
         # Confirm screen
         textMessage: TextGameObject = TextGameObject(
             screen=self.__screen__,
@@ -232,6 +285,9 @@ class DifficultySelectionService:
         confirmMessage.draw()
 
     def __initInputFields__(self):
+        """
+        Creates all the Input Fields needed for the Difficulty Selection Service.
+        """
         self.__inputFields__ = []
         inputFieldObject: TextGameObject
         for idx, (label, text) in enumerate(self.__fields__):
