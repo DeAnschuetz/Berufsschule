@@ -34,23 +34,23 @@ class GameObjectCreationService:
         assetPath = os.path.join(os.path.dirname(baseDir), "Assets")
 
         self.__oreUnloadStationImg__ = pygame.transform.scale(
-            pygame.image.load(os.path.join(assetPath, "station.jpg")).convert_alpha(), (80, 60)
+            pygame.image.load(os.path.join(assetPath, "unloadStation.png")).convert_alpha(), (120, 120)
         )
         self.__helicopterImg__ = pygame.transform.scale(
-            pygame.image.load(os.path.join(assetPath, "heli.png")).convert_alpha(), (80, 41)
+            pygame.image.load(os.path.join(assetPath, "heli.png")).convert_alpha(), (100, 100)
         )
         self.__oreTransportImg__ = pygame.transform.scale(
-            pygame.image.load(os.path.join(assetPath, "transporter.png")).convert_alpha(), (50, 30)
+            pygame.image.load(os.path.join(assetPath, "transporter.png")).convert_alpha(), (80, 40)
         )
         self.__gasStationImg__ = pygame.transform.scale(
-            pygame.image.load(os.path.join(assetPath, "gasStation.jpg")).convert_alpha(), (60, 60)
+            pygame.image.load(os.path.join(assetPath, "gasStation.png")).convert_alpha(), (60, 120)
         )
         self.__oreMineImg__ = pygame.transform.scale(
-            pygame.image.load(os.path.join(assetPath, "mine.png")).convert_alpha(), (60, 60)
+            pygame.image.load(os.path.join(assetPath, "mine2.png")).convert_alpha(), (118, 100)
         )
 
     def createGameObjects(self, difficulty : GameDifficulty) -> list[ImageGameObject]:
-        # Create the Helicopter object with difficulty settings
+        # Create the Helicopter object with difficulty setting
         helicopter : Helicopter = Helicopter(
             image=self.__helicopterImg__,
             maxSpeed=difficulty.getHelicopterMaxSpeed(),

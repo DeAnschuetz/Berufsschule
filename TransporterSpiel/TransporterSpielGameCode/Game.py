@@ -1,5 +1,3 @@
-import os
-
 import pygame
 import sys
 
@@ -12,15 +10,26 @@ from Services.ConfigService import loadConfig, getConfig
 from Services.DifficultySelectionService import DifficultySelectionService
 from Services.GameObjectCreationService import GameObjectCreationService
 
-
-def loadImg(baseDir, fileName, size):
-    image = pygame.image.load(os.path.join(baseDir, "Assets", fileName)).convert_alpha()
-    image = pygame.transform.scale(image, size)
-    image.set_colorkey((255, 255, 255))
-    return image
-
-
 class Game:
+    """
+    A Class representing the Main Game Loop and Setup for the Vehicle Game.
+
+    Attributes:
+        __difficulty__ (GameDifficulty): The Difficulty Level for the current Game Round.
+        __playing__ (bool): Flag indicating whether the Game is currently being played.
+        __running__ (bool): Flag indicating whether the Game Loop is running.
+        __oreDelivered__ (float): The Amount of Ore delivered during the Game.
+        __screen__ (pygame.Surface): The Pygame Surface representing the Game Window.
+        __mainMenu__ (MainMenu): The Main Menu Interface.
+        __clock__ (pygame.time.Clock): Clock for managing the Frame Rate.
+        __difficultySelectionService__ (DifficultySelectionService): Service to manage Difficulty Selection.
+        __gameObjectCreationService__ (GameObjectCreationService): Service to create Game Objects.
+        __windowHeight__ (int): Height of the Game Window.
+        __gameWidth__ (int): Width of the actual Game Area (excluding HUD).
+        __hudWidth__ (int): Width of the HUD Sidebar.
+        __difficultySelected__ (bool): Whether the Difficulty Selection Screen should be shown.
+        __fps__ (int): The Frames Per Second Limit for the Game.
+    """
     __difficulty__ : GameDifficulty
     __playing__ : bool
     __running__ : bool
@@ -36,18 +45,21 @@ class Game:
     __windowHeight__ : int
     __gameWidth__ : int
     __hudWidth__ : int
-    __difficultySelection__ : bool
+    __difficultySelected__ : bool
     __fps__ : int
 
 
     def __init__(self):
+        """
+        Initialize the Game Environment, including Window Setup, Services, and Menu Components.
+        """
         config = getConfig()
         screenConfig = config.getScreenConfig()
         windowWidth = screenConfig.getScreenWidth()
         self.__hudWidth__ = screenConfig.getHudConfig().getSideHudConfig().getWidth()
         self.__gameWidth__ = windowWidth - self.__hudWidth__
         self.__windowHeight__ = screenConfig.getScreenHeight()
-        self.__difficultySelection__ = config.getDifficultySelection()
+        self.__difficultySelected__ = config.getDifficultySelection()
         self.__fps__ = config.getFPS()
 
         pygame.init()
@@ -80,13 +92,28 @@ class Game:
         self.__run__()
 
     def __showErrorMessage__(self, message):
+        """
+        Display an Error Message on the Game Screen.
+
+        Args:
+            message (str): The Error Message Text to be displayed.
+        """
         errorMessage : ErrorTextGameObject =ErrorTextGameObject(
             self.__screen__,
             message,
         )
-        errorMessage.updateGameObjects()
+        errorMessage.draw()
 
     def __waitForKeyPress__(self, key):
+        """
+        Wait until the given Key is pressed or the Window is closed.
+
+        Args:
+            key (int): Pygame Key Code to wait for.
+
+        Returns:
+            bool: True if the specified Key was pressed, False if the Window was closed.
+        """
         waiting = True
         while waiting:
             for event in pygame.event.get():
@@ -99,10 +126,17 @@ class Game:
         return False
 
     def __selectDifficulty__(self):
+        """
+        Handle the Difficulty Selection Process.
+
+        Returns:
+            bool: True if a Difficulty was successfully selected, False if the Game should exit.
+        """
         self.__oreDelivered__ = 0
-        if self.__difficultySelection__:
+        if self.__difficultySelected__:
             self.__difficulty__ = self.__difficultySelectionService__.selectDifficulty()
         else:
+            # Create Difficulty with Default Values
             self.__difficulty__ = GameDifficulty()
 
         if self.__difficulty__ is None:
@@ -110,6 +144,9 @@ class Game:
         return True
 
     def __run__(self):
+        """
+        Execute the Main Game Loop, handling Difficulty Selection and Round Execution.
+        """
         self.__running__ = True
         while self.__running__:
             try:
@@ -126,18 +163,22 @@ class Game:
                 mainMenu=self.__mainMenu__,
                 screen=self.__screen__
             )
+
+            # Game Loop for the Current Round
             while currentRound.isPlaying():
 
                 self.__clock__.tick(self.__fps__)
-                # TODO WEnn noch Zeit bewegung auf DeltaTime
-                #deltaTime = self.__clock__.tick(60) / 1000.0
 
                 currentRound.update()
 
 
         pygame.quit()
 
+# Handle external screen argument
 useSmallScreenOuter = "--small" in sys.argv
-# Load config once
+
+# Load Configuration before Game Initialization
 loadConfig(useSmallScreenOuter)
+
+# Start the Game
 game = Game()

@@ -1,21 +1,53 @@
 import time
+from typing import cast
 
 import pygame
-
-from Model.GameObjects.Base.GameObject import GameObject
 from Model.GameObjects.Base.GameObjectContainer import GameObjectContainer
 from Model.GameObjects.Base.ImageGameObject import ImageGameObject
 from Model.GameObjects.Messages.TextGameObject import TextGameObject
 
 
 class TimedTextGameObject(GameObjectContainer):
+    """
+    A Container Class for displaying a Timed Text Message with a Background on the Screen.
 
+    The Text and Background fade out smoothly over a given Duration after creation.
+
+    Attributes:
+        __startTime__ (float): Timestamp when the Object was created.
+        __duration__ (float): Time in Seconds the Message is displayed before it expires.
+    """
     __startTime__ : time.time
     __duration__ : float
-    __temporaryText__: TextGameObject
-    __background__: ImageGameObject
 
-    def __init__(self, message: str, xCoordinate: float, yCoordinate: float, fontSize : int, screen: pygame.Surface, color: tuple = (255, 255, 255), backgroundColor: tuple = (70, 70, 70), borderSize: int = 20, layer : int = 15, duration: float = 2.0):
+    def __init__(
+            self,
+            message: str,
+            xCoordinate: float,
+            yCoordinate: float,
+            fontSize : int,
+            screen: pygame.Surface,
+            color: tuple = (255, 255, 255),
+            backgroundColor: tuple = (70, 70, 70),
+            borderSize: int = 20,
+            layer : int = 15,
+            duration: float = 2.0
+    ):
+        """
+        Initialize a TimedTextGameObject with Text and Background Images.
+
+        Args:
+            message (str): The Text Message to display.
+            xCoordinate (float): X position on the screen.
+            yCoordinate (float): Y position on the screen.
+            fontSize (int): Font size of the text.
+            screen (pygame.Surface): Surface to render the message on.
+            color (tuple, optional): RGB Color of the text. Defaults to white (255, 255, 255).
+            backgroundColor (tuple, optional): RGB Color of the background rectangle. Defaults to dark gray (70, 70, 70).
+            borderSize (int, optional): Padding around the text for background size. Defaults to 20.
+            layer (int, optional): Base drawing layer. Defaults to 15.
+            duration (float, optional): How long to display the message in seconds. Defaults to 2.0.
+        """
         super().__init__(
             xCoordinate=xCoordinate,
             yCoordinate=yCoordinate,
@@ -23,35 +55,43 @@ class TimedTextGameObject(GameObjectContainer):
             baseLayer=layer,
         )
 
-        self.__temporaryText__: TextGameObject = TextGameObject(
+        # Create the TextGameObject with slightly higher layer than background
+        temporaryText: TextGameObject = TextGameObject(
             message=message,
             xCoordinate=xCoordinate,
             yCoordinate=yCoordinate,
             fontSize=fontSize,
             screen=screen,
             color=color,
-            layer= super().getBaseLayer() + 1
+            layer= super().getBaseLayer() + 1,
+            identifier="%text%"
         )
+        self.addGameObject(temporaryText)
 
-        backgroundWidth: int =  self.__temporaryText__.getWidth() + borderSize
-        backgroundHeight: int =  self.__temporaryText__.getHeight() + borderSize
+        # Calculate background size with border padding
+        backgroundWidth: int = temporaryText.getWidth() + borderSize
+        backgroundHeight: int = temporaryText.getHeight() + borderSize
         backgroundImage: pygame.Surface = pygame.Surface((backgroundWidth, backgroundHeight))
         backgroundImage.fill(backgroundColor)
-        self.__background__ = ImageGameObject(
+        background= ImageGameObject(
             xCoordinate=xCoordinate,
             yCoordinate=yCoordinate,
             screen=screen,
-            layer= super().getBaseLayer(),
-            image=backgroundImage
+            layer= self.getBaseLayer(),
+            image=backgroundImage,
+            identifier="%background%"
         )
         self.__startTime__ = time.time()
         self.__duration__ = duration
-        if xCoordinate - (self.__background__.getWidth() / 2) - 10 < 0:
-            xCoordinate = (self.__background__.getWidth() / 2) + 10
-            self.__temporaryText__.setXCoordinate(xCoordinate)
-            self.__background__.setXCoordinate(xCoordinate)
 
-    def updateGameObjects(self) -> None:
+
+        self.addGameObject(background)
+
+    def draw(self) -> None:
+        """
+        Update the transparency (alpha) of the Text and Background based on elapsed Time,
+        fading them out smoothly from mostly opaque to almost transparent over the duration.
+        """
         # Calculate how much time has passed
         elapsed = time.time() - self.__startTime__
         ratio = min(elapsed / self.__duration__, 1.0)
@@ -62,13 +102,15 @@ class TimedTextGameObject(GameObjectContainer):
         currentAlpha = int(startAlpha + (endAlpha - startAlpha) * ratio)
 
         # Set the current alpha on the background image
-        self.__background__.setAlpha(currentAlpha)
-        self.__temporaryText__.setAlpha(currentAlpha + 20)
-        self.draw()
-
-    def draw(self) -> None:
-        self.__background__.draw()
-        self.__temporaryText__.draw()
+        cast(ImageGameObject, self.getGameObjectById("%background%")).setAlpha(currentAlpha)
+        cast(ImageGameObject, self.getGameObjectById("%text%")).setAlpha(currentAlpha + 20)
+        super().draw()
 
     def isExpired(self) -> bool:
+        """
+        Check whether the Message display time has passed its Duration.
+
+        Returns:
+            bool: True if expired, False otherwise.
+        """
         return time.time() - self.__startTime__ > self.__duration__

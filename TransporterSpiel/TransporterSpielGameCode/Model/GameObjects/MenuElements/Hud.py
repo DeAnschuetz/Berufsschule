@@ -13,14 +13,22 @@ from Services.ConfigService import getConfig
 
 class Hud(GameObjectContainer):
     """
-    A Class representing the Heads-Up Display (HUD) of the Game Screen.
+    A Class representing the Heads-Up Display (HUD) in the Game.
 
-    Attributes:
-        __hudGameObjects__ (list[GameObject]): List of HUD Components displayed on Screen.
+    Inherits from:
+        GameObjectContainer (Model.GameObjects.Base.GameObjectContainer): Base Class for Grouping GameObjects.
     """
-    __hudGameObjects__ : list[GameObject]
 
     def __init__(self, screen: pygame.Surface, oreToCollect: float = 800, gameObjects: list[GameObject] = None, baseLayer: int = 100):
+        """
+        Initialize a Hud Object with Side and Top HUD Elements.
+
+        Args:
+            screen (pygame.Surface): Surface to draw the HUD on.
+            oreToCollect (float): Amount of Ore to Collect for Completion.
+            gameObjects (list[GameObject]): List of GameObjects in the Game.
+            baseLayer (int): Base Layer used for rendering.
+        """
         """
         Initialize a Hud Object with Side and Top HUD Elements.
 
@@ -33,7 +41,11 @@ class Hud(GameObjectContainer):
             screen=screen,
             baseLayer=baseLayer
         )
+
+        # Get configured Y-Coordinate for Top HUD placement
         yCoordinate: int = getConfig().getScreenConfig().getHudConfig().getTopHudConfig().getYCoordinate()
+
+        # Find the OreTransport instance among the GameObjects (if any)
         oreTransport = next(filter(lambda obj: isinstance(obj, OreTransport), gameObjects), None)
         topHud: TopHud = TopHud(
             screen=screen,
@@ -47,25 +59,26 @@ class Hud(GameObjectContainer):
             gameObjects=gameObjects,
             baseLayer= super().getBaseLayer() + 1
         )
-        self.__hudGameObjects__ = [sideHud, topHud]
+        self.__gameObjects__ = [sideHud, topHud]
 
-    def updateGameObjects(self):
+    def __updateGameObjects__(self):
         """
         Update all HUD GameObjects.
-        This calls the update method on each HUD component to refresh their display.
+
+        This calls the update and draw methods on each HUD component
+        to refresh their visual representation.
         """
-        for hudGameObject in self.__hudGameObjects__:
-            cast(GameObjectContainer, hudGameObject).updateHudElements()
+        for hudGameObject in self.__gameObjects__:
+            hudGameObject.update()
+            hudGameObject.draw()
 
     def __str__(self) -> str:
         """
-        Return a Detailed String Representation of the Hud Instance,
-        Including All HUD GameObjects.
+        Return a detailed String Representation of the Hud Instance,
+        including references to internal HUD elements.
         """
-        hudObjectsStr = ", ".join(
-            [str(obj) for obj in self.__hudGameObjects__]
-        )
         return (
-            f"{type(self).__name__}("
-            f"hudGameObjects=[{hudObjectsStr}])"
+            f"{type(self).__name__} (baseLayer={self.getBaseLayer()}, "
+            f"screen=<{type(self.getScreen()).__name__}>, "
+            f"gameObjects={[type(obj).__name__ for obj in self.__gameObjects__]})"
         )

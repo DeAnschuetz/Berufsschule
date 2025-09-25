@@ -12,51 +12,56 @@ from Services.ConfigService import getConfig
 
 class TopHud(GameObjectContainer):
     """
-    A Class representing the Top HUD Element including Fuel Level and Ore Loading Status.
+    A Class representing the Top Heads-Up Display (HUD) for the Game Screen.
+
+    This HUD contains multiple HUD Elements such as Fuel Level Bar and Load Level Bar,
+    positioned near the top of the screen and centered horizontally.
 
     Inherits from:
-        GameObject (Model.GameObjects.Base.GameObject) representing the Background of the Top HUD.
-
-    Attributes:
-        oreTransport (OreTransport): Ore Transport Object this HUD is linked to.
-        fuelLevelBar (ImageGameObject): Visual Bar showing current Fuel Level.
+        GameObjectContainer (Model.GameObjects.Base.GameObjectContainer):
+            Container for multiple GameObjects with layering and rendering control.
     """
-    oreTransport : OreTransport
-    fuelLevelBar : FuelLevelBar
-    loadLevelBar : LoadLevelBar
 
     def __init__(self, screen: pygame.Surface, oreTransport: OreTransport, yCoordinate: float = 0, baseLayer: int = 100):
         """
-        Initialize a TopHud Object.
+        Initialize a TopHud Object with Fuel and Load Level Bars and a Background.
 
         Args:
             screen (pygame.Surface): Surface to draw the HUD on.
-            oreTransport (OreTransport): The Ore Transport Object to monitor.
-            yCoordinate (float): Y-Coordinate for placing the HUD Elements.
+            oreTransport (OreTransport): The Ore Transport Vehicle to monitor HUD values for.
+            yCoordinate (float): Vertical offset for placing HUD Elements from the top.
+            baseLayer (int): Base layer used for rendering order of HUD Elements.
         """
         super().__init__(
             screen=screen,
             baseLayer=baseLayer + 1
         )
-        self.oreTransport = oreTransport
-        self.__fuelLevelBar__ = FuelLevelBar(
+        # Create and add Fuel Level Bar HUD element
+        fuelLevelBar = FuelLevelBar(
             screen=screen,
             oreTransport=oreTransport,
             yCoordinate=yCoordinate,
-            baseLayer=baseLayer
+            baseLayer=self.__baseLayer__
         )
-        self.__loadLevelBar__ = LoadLevelBar(
+        self.addGameObject(fuelLevelBar)
+
+        # Create and add Load Level Bar HUD element, positioned below the Fuel Level Bar with some padding
+        loadLevelBar = LoadLevelBar(
             screen=screen,
             oreTransport=oreTransport,
-            yCoordinate=yCoordinate + self.__fuelLevelBar__.getHeight() + 10,
-            baseLayer = baseLayer
+            yCoordinate=yCoordinate + fuelLevelBar.getHeight() + 10,
+            baseLayer = self.__baseLayer__
         )
-        topHudBackground: pygame.Surface = pygame.Surface((self.__fuelLevelBar__.getWidth() + 20 + yCoordinate, self.__fuelLevelBar__.getHeight() + self.__loadLevelBar__.getHeight() + 30))
-        topHudBackground.fill((50, 50, 50))
+        self.addGameObject(loadLevelBar)
 
+        # Calculate center X position for the background based on screen config (centered horizontally)
         screenConfig = getConfig().getScreenConfig()
         gameWidth: int = screenConfig.getScreenWidth() - screenConfig.getHudConfig().getSideHudConfig().getWidth()
 
+        # Create a semi-transparent background surface sized to encompass both bars and some padding
+        topHudBackground: pygame.Surface = pygame.Surface((loadLevelBar.getWidth() + 20 + yCoordinate, fuelLevelBar.getHeight() + loadLevelBar.getHeight() + 30))
+        topHudBackground.fill((50, 50, 50))
+        # Calculate center x position for the background based on screen config (centered horizontally)
         background = ImageGameObject(
             screen=screen,
             xCoordinate=gameWidth / 2,
@@ -64,13 +69,15 @@ class TopHud(GameObjectContainer):
             image=topHudBackground,
             layer=baseLayer
         )
-        super().addGameObject(background)
+        self.addGameObject(background)
 
-    def updateHudElements(self):
+    def __str__(self) -> str:
         """
-        Update and Draw all Top HUD Elements.
+        Return a detailed String Representation of the TopHud instance,
+        including its class name and relevant attribute information.
         """
-        super().updateGameObjects()
-        super().drawByLayer()
-        self.__loadLevelBar__.updateGameObjects()
-        self.__fuelLevelBar__.updateGameObjects()
+        return (
+            f"{type(self).__name__} (baseLayer={self.__baseLayer__}, "
+            f"containedGameObjectsCount={len(self.getGameObjects())}, "
+            f"screen=<{type(self.getScreen()).__name__}>)"
+        )

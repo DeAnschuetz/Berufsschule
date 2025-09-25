@@ -8,58 +8,82 @@ def to_camel_case(snake_str):
 
 
 class DynamicConfig:
+    """
+    A class that wraps a dictionary and allows attribute-style access
+    and auto-generates getter methods for each attribute.
+    """
     def __init__(self, config_dict: dict):
         for key, value in config_dict.items():
+            # Recursively wrap dictionaries as DynamicConfig instances
             if isinstance(value, dict):
                 value = DynamicConfig(value)
             setattr(self, key, value)
 
             # Create and attach a getter method on the instance
             camel_method = f"get{key[0].upper()}{key[1:]}"
+
             # Define the function separately to bind the current key
             def make_getter(k):
                 return lambda self=self: getattr(self, k)
-            # Bind to the instance as method name
+
+            # Bind the generated getter function to this instance
             object.__setattr__(self, camel_method, make_getter(key))
 
     def __repr__(self):
         return f"<DynamicConfig {self.__dict__}>"
 
     def get(self, key, default=None):
+        """
+        Retrieve attribute by key with optional default value.
+        """
         return getattr(self, key, default)
 
 
 
 class GameConfigDynamic:
-    def __init__(self, config_dict: dict, useSmallScreen: bool = False):
+    """
+    Game-specific Configuration Loader supporting screen size switching
+    and dynamic attribute generation based on input configuration.
+    """
+    def __init__(self, configDict: dict, useSmallScreen: bool = False):
         self.useSmallScreen = useSmallScreen
-        self.fps = config_dict.get("fps", 60)
-        self.difficultySelection = config_dict.get("difficultySelection", True)
 
-        self.errorMessageConfig = config_dict.get("errorMessageConfig", {})
+        # Basic config options with default values
+        self.fps = configDict.get("fps", 60)
+        self.difficultySelection = configDict.get("difficultySelection", True)
+
+        # Named config sections with predefined getter lambdas
+        self.errorMessageConfig = configDict.get("errorMessageConfig", {})
         self.getErrorMessageConfig = lambda: self.errorMessageConfig
 
-        self.gameConfig = config_dict.get("gameConfig", {})
+        self.finalMessageConfig = configDict.get("finalMessageConfig", {})
+        self.getFinalMessageConfig = lambda: self.finalMessageConfig
+
+        self.gameConfig = configDict.get("gameConfig", {})
         self.getGameConfig = lambda: self.gameConfig
 
-        # Create camelCase getters
+        # Generate camelCase getters for basic fields
         self.getFPS = lambda: self.fps
         self.getDifficultySelection = lambda: self.difficultySelection
 
-        # Load screen config
+        # Determine screen config section based on mode
         screenKey = "smallScreenConfig" if useSmallScreen else "bigScreenConfig"
-        screenConfig = config_dict.get(screenKey, {})
+        screenConfig = configDict.get(screenKey, {})
+
+        # Wrap screen config in DynamicConfig for nested attribute access
         self.screen = DynamicConfig(screenConfig)
         self.getScreenConfig = lambda: self.screen
 
-        # Load other configs dynamically (excluding screen configs)
+        # Keys to skip from dynamic generation (already handled above)
         excluded_keys = {"fps", "difficultySelection", "smallScreenConfig", "bigScreenConfig"}
-        for key, value in config_dict.items():
+
+        # Dynamically generate attributes and camelCase getters for remaining config sections
+        for key, value in configDict.items():
             if key not in excluded_keys:
                 attr_value = DynamicConfig(value) if isinstance(value, dict) else value
                 setattr(self, key, attr_value)
 
-                # Create camelCase getter dynamically
+                # Create a dynamic camelCase getter for each additional section
                 camel_method = f"get{to_camel_case(key[0].upper() + key[1:])}"
                 setattr(self, camel_method, lambda k=key: getattr(self, k))
 
